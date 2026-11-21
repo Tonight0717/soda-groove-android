@@ -17,6 +17,7 @@ jobs:
       - name: Install published APK and open turntable and shelf
         run: |
           set -euo pipefail
+          export PATH="$ANDROID_HOME/platform-tools:$PATH"
           sudo chmod a+rw /dev/kvm
           "$ANDROID_HOME/emulator/emulator" -avd SodaCheck -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > "$RUNNER_TEMP/emulator.log" 2>&1 &
           trap 'adb emu kill || true' EXIT
@@ -28,20 +29,7 @@ jobs:
           adb shell wm density 320
           adb shell input keyevent 82
           adb shell am start -W -n kr.sodagroove.player/.DeckActivity
-          adb shell uiautomator dump /sdcard/deck.xml
-          adb pull /sdcard/deck.xml "$RUNNER_TEMP/deck.xml"
-          python3 - <<'PY'
-          import os, re, subprocess, xml.etree.ElementTree as ET
-          tree = ET.parse(os.environ['RUNNER_TEMP']+'/deck.xml')
-          shelf = next(n for n in tree.iter('node') if n.get('text') == '진열장')
-          x,y,r,b = map(int,re.findall(r'\d+',shelf.get('bounds')))
-          with open('turntable.png','wb') as image:
-              subprocess.run(['adb','exec-out','screencap','-p'],stdout=image,check=True)
-          subprocess.run(['adb','shell','input','tap',str((x+r)//2),str((y+b)//2)],check=True)
-          PY
-          adb shell uiautomator dump /sdcard/shelf.xml
-          adb shell cat /sdcard/shelf.xml | grep -q '내 진열장'
-          adb exec-out screencap -p > shelf.png
+          python3 tools/device-check.py
       - uses: actions/upload-artifact@v4
         with:
           name: device-screens
