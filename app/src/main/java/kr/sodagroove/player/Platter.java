@@ -12,6 +12,11 @@ final class Platter extends View {
   }
 
   final Paint ink = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+  final Path clip = new Path();
+  final Rect crop = new Rect();
+  final RectF labelBounds = new RectF();
+  final Typeface labelFont = Typeface.create("sans-serif-condensed", Typeface.BOLD);
+  SweepGradient vinyl;
   Bitmap cover;
   Seek seek;
   boolean playing, dragging, canSeek;
@@ -29,24 +34,34 @@ final class Platter extends View {
   }
 
   @Override
+  protected void onSizeChanged(int w, int h, int oldW, int oldH) {
+    r = Math.min(w * .34f, h * .435f);
+    cx = w * .46f;
+    cy = h * .51f;
+    vinyl =
+        new SweepGradient(
+            cx, cy, new int[] {0xff07516a, 0xff2597a4, 0xff0c536b, 0xff52b5bf, 0xff07516a}, null);
+    labelBounds.set(cx - r * .37f, cy - r * .37f, cx + r * .37f, cy + r * .37f);
+    clip.reset();
+    clip.addCircle(cx, cy, r * .37f, Path.Direction.CW);
+  }
+
+  @Override
   protected void onDraw(Canvas c) {
     long now = SystemClock.uptimeMillis();
     float dt = Math.min(60, now - tick);
     tick = now;
     if (playing) rotation = (rotation + dt * 0.09f) % 360;
     engagement = playing ? Math.min(1, engagement + dt / 330) : Math.max(0, engagement - dt / 330);
-    float w = getWidth(), h = getHeight();
-    r = Math.min(w * .34f, h * .435f);
-    cx = w * .46f;
-    cy = h * .51f;
     circle(c, cx + 2, cy + r * .055f, r * 1.025f, 0x33436772);
     circle(c, cx, cy, r * 1.02f, 0xffeafcff);
-    ink.setShader(
-        new SweepGradient(
-            cx, cy, new int[] {0xff07516a, 0xff2597a4, 0xff0c536b, 0xff52b5bf, 0xff07516a}, null));
+    c.save();
+    c.rotate(rotation, cx, cy);
+    ink.setShader(vinyl);
     ink.setColor(-1);
     c.drawCircle(cx, cy, r, ink);
     ink.setShader(null);
+    c.restore();
     ink.setStyle(Paint.Style.STROKE);
     ink.setStrokeWidth(Math.max(1, r * .006f));
     for (int i = 0; i < 30; i++)
@@ -56,23 +71,18 @@ final class Platter extends View {
     c.rotate(rotation, cx, cy);
     circle(c, cx, cy, r * .39f, 0xffb4f0da);
     if (cover != null) {
-      Path clip = new Path();
-      clip.addCircle(cx, cy, r * .37f, Path.Direction.CW);
       c.save();
       c.clipPath(clip);
       int size = Math.min(cover.getWidth(), cover.getHeight()),
           x = (cover.getWidth() - size) / 2,
           y = (cover.getHeight() - size) / 2;
       ink.setColor(-1);
-      c.drawBitmap(
-          cover,
-          new Rect(x, y, x + size, y + size),
-          new RectF(cx - r * .37f, cy - r * .37f, cx + r * .37f, cy + r * .37f),
-          ink);
+      crop.set(x, y, x + size, y + size);
+      c.drawBitmap(cover, crop, labelBounds, ink);
       c.restore();
     } else {
       ink.setColor(0xff006678);
-      ink.setTypeface(Typeface.create("sans-serif-condensed", Typeface.BOLD));
+      ink.setTypeface(labelFont);
       ink.setTextSize(r * .135f);
       ink.setTextAlign(Paint.Align.CENTER);
       c.drawText("SODA", cx, cy - r * .1f, ink);

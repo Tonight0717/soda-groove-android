@@ -48,7 +48,7 @@ public class DeckActivity extends Activity {
 
   private LinearLayout column() {
     LinearLayout layout = new LinearLayout(this);
-    layout.setOrientation(1);
+    layout.setOrientation(LinearLayout.VERTICAL);
     return layout;
   }
 
@@ -307,6 +307,7 @@ public class DeckActivity extends Activity {
           } catch (JSONException e) {
             waiting();
           }
+          handler.removeCallbacks(heartbeat);
           handler.postDelayed(heartbeat, 400);
         });
   }
@@ -443,11 +444,11 @@ public class DeckActivity extends Activity {
   @Override
   protected void onPause() {
     active = false;
-    generationForPollPause();
+    pausePlayer();
     super.onPause();
   }
 
-  private void generationForPollPause() {
+  private void pausePlayer() {
     handler.removeCallbacks(heartbeat);
     if (web != null) {
       web.evaluateJavascript("if(typeof player!=='undefined' && ready)player.pauseVideo()", null);
