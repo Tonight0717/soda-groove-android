@@ -4,7 +4,7 @@
 
 ## 설치와 첫 재생
 
-1. 갤럭시로 **SodaGroove.apk**를 받습니다. [첫 버전 다운로드](https://github.com/Tonight0717/soda-groove-android/releases/tag/v1.0)
+1. 갤럭시로 **SodaGroove.apk**를 받습니다. [최신 버전 다운로드](https://github.com/Tonight0717/soda-groove-android/releases/latest)
 2. **내 파일 → 다운로드**에서 APK를 누르고 **설치**를 선택합니다. 설치 출처를 묻는 경우 이 파일을 연 앱에 대한 허용 여부를 확인하세요. 메뉴 이름은 One UI 버전에 따라 달라집니다.
 3. YouTube 또는 YouTube Music에서 곡이나 공개 재생목록의 **공유 → 링크 복사**를 누릅니다.
 4. 소다그루브의 **링크 열기**에 붙여넣고, 아래쪽 공식 플레이어의 **▶**를 누릅니다. 영상이 재생되면 LP가 돌고 가운데에 현재 곡의 썸네일이 보입니다.

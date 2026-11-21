@@ -19,7 +19,7 @@ for step in $(seq 1 100); do
   sleep 3
 done
 test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1
-curl -fsSL https://github.com/Tonight0717/soda-groove-android/releases/download/v1.0/SodaGroove.apk -o "$RUNNER_TEMP/SodaGroove.apk"
+curl -fsSL https://github.com/Tonight0717/soda-groove-android/releases/download/v1.1/SodaGroove.apk -o "$RUNNER_TEMP/SodaGroove.apk"
 adb install "$RUNNER_TEMP/SodaGroove.apk"
 adb shell wm size 780x1688
 adb shell wm density 320

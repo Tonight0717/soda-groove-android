@@ -40,7 +40,7 @@ final class Platter extends View {
     cy = h * .51f;
     vinyl =
         new SweepGradient(
-            cx, cy, new int[] {0xff07516a, 0xff2597a4, 0xff0c536b, 0xff52b5bf, 0xff07516a}, null);
+            cx, cy, new int[] {0xff397d90, 0xff87c4ce, 0xff45899b, 0xffa3d9d9, 0xff397d90}, null);
     labelBounds.set(cx - r * .37f, cy - r * .37f, cx + r * .37f, cy + r * .37f);
     clip.reset();
     clip.addCircle(cx, cy, r * .37f, Path.Direction.CW);
@@ -69,7 +69,7 @@ final class Platter extends View {
     ink.setStyle(Paint.Style.FILL);
     c.save();
     c.rotate(rotation, cx, cy);
-    circle(c, cx, cy, r * .39f, 0xffb4f0da);
+    circle(c, cx, cy, r * .39f, 0xffd4f0e5);
     if (cover != null) {
       c.save();
       c.clipPath(clip);
@@ -108,7 +108,7 @@ final class Platter extends View {
     c.drawLine(px, py, elbowX, elbowY, ink);
     circle(c, px, py, r * .12f, 0xff437986);
     circle(c, px, py, r * .071f, 0xffc5e7ea);
-    circle(c, tipX, tipY, r * .063f, 0xffb8e74b);
+    circle(c, tipX, tipY, r * .063f, 0xffd1ea92);
     if (playing || engagement > 0) postInvalidateOnAnimation();
   }
 

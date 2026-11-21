@@ -5,6 +5,8 @@ import android.content.*;
 import android.content.res.ColorStateList;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.InsetDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.net.Uri;
 import android.os.*;
 import android.text.TextUtils;
@@ -16,8 +18,8 @@ import java.util.Locale;
 import org.json.*;
 
 public class DeckActivity extends Activity {
-  private static final int NAVY = 0xff103f50, PAPER = 0xfff7fbf8;
-  private static final int[] PALETTE = {0xffa4e2f6, 0xffa6ebce, 0xffffb7aa};
+  private static final int NAVY = 0xff244c5b, PAPER = 0xfff7fbfc;
+  private static final int[] PALETTE = {0xffd8eff8, 0xffd9f1e7, 0xfffbe4df};
   private static final String[] COLORS = {"하늘", "민트", "코랄"};
   private final Handler handler = new Handler(Looper.getMainLooper());
   private SharedPreferences prefs;
@@ -68,12 +70,30 @@ public class DeckActivity extends Activity {
   }
 
   private Button button(String caption, Runnable action) {
+    return button(caption, 0xffe5f0f3, action);
+  }
+
+  private Button button(String caption, int surface, Runnable action) {
     Button b = new Button(this);
     b.setAllCaps(false);
     b.setText(caption);
     b.setTextSize(14);
-    b.setTextColor(NAVY);
-    b.setBackgroundTintList(ColorStateList.valueOf(0xffecf7f4));
+    b.setTextColor(new ColorStateList(
+        new int[][] {{-android.R.attr.state_enabled}, {}}, new int[] {0xff667b83, NAVY}));
+    b.setStateListAnimator(null);
+    b.setElevation(0);
+    b.setMinWidth(dp(48));
+    b.setMinimumWidth(dp(48));
+    b.setMinHeight(dp(48));
+    b.setMinimumHeight(dp(48));
+    b.setLetterSpacing(0);
+    b.setGravity(Gravity.CENTER);
+    b.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+    b.setBackgroundTintList(null);
+    GradientDrawable pill = shape(surface, 24);
+    RippleDrawable ripple = new RippleDrawable(ColorStateList.valueOf(0x28407885), pill, null);
+    b.setBackground(new InsetDrawable(ripple, dp(3), dp(4), dp(3), dp(4)));
+    b.setPadding(dp(12), dp(4), dp(12), dp(4));
     b.setOnClickListener(v -> action.run());
     return b;
   }
@@ -154,7 +174,7 @@ public class DeckActivity extends Activity {
     sheet.addView(header);
     service = label(source == null ? "소다그루브" : source.service(), 13, true);
     header.addView(service, weight());
-    header.addView(button("링크 열기", this::linkDialog));
+    header.addView(button("링크 열기", 0xfffcffff, this::linkDialog));
     deck = new Platter(this);
     deck.seek = this::seekTo;
     int h = Math.max(140, Math.min(245, getResources().getConfiguration().screenHeightDp - 480));
@@ -166,6 +186,8 @@ public class DeckActivity extends Activity {
     LinearLayout track = row();
     sheet.addView(track);
     seek = new SeekBar(this);
+    seek.setProgressTintList(ColorStateList.valueOf(0xff598f9c));
+    seek.setThumbTintList(ColorStateList.valueOf(0xff518796));
     seek.setMax(1000);
     track.addView(seek, weight());
     clock = label("0:00 / 0:00", 12, false);
@@ -187,9 +209,10 @@ public class DeckActivity extends Activity {
         });
     seek.setEnabled(false);
     LinearLayout actions = row();
+    pad(actions, 0, 4);
     controls.addView(actions);
-    actions.addView(button("진열장에 저장", this::save), weight());
-    original = button("원본 열기", this::openOriginal);
+    actions.addView(button("진열장에 저장", 0xffdaefe7, this::save), weight());
+    original = button("원본 열기", 0xffe1eff9, this::openOriginal);
     actions.addView(original, weight());
     status = label("", 14, false);
     controls.addView(status);
