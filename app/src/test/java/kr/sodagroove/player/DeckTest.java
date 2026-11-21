@@ -122,6 +122,24 @@ public class DeckTest {
   }
 
   @Test
+  public void rotationKeepsTheOpenedTrack() {
+    RuntimeEnvironment.getApplication()
+        .getSharedPreferences("deck", 0)
+        .edit()
+        .putString("t/p/" + LIST, "심야 드라이브 모음")
+        .commit();
+    ActivityController<DeckActivity> ctl = Robolectric.buildActivity(DeckActivity.class).setup();
+    open(ctl.get().getWindow().getDecorView(), "https://music.youtube.com/playlist?list=" + LIST);
+    assertNotNull(find(ctl.get().getWindow().getDecorView(), "심야 드라이브 모음"));
+    ctl.recreate();
+    View root = ctl.get().getWindow().getDecorView();
+    assertNotNull(find(root, "심야 드라이브 모음"));
+    assertNotNull(find(root, "뮤직에서 열기"));
+    assertNull(findType(root, WebView.class));
+    ctl.pause().stop().destroy();
+  }
+
+  @Test
   public void savedPlaylistSurvivesRelaunchAndCanBeDeleted() {
     ActivityController<DeckActivity> ctl = Robolectric.buildActivity(DeckActivity.class).setup();
     View root = ctl.get().getWindow().getDecorView();
