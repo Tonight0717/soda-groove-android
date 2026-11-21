@@ -1,0 +1,49 @@
+name: Android device check
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  launch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install test device
+        run: |
+          set -euo pipefail
+          sdk="$ANDROID_HOME/cmdline-tools/latest/bin"
+          "$sdk/sdkmanager" 'system-images;android-30;google_apis;x86_64' 'emulator' 'platform-tools'
+          echo no | "$sdk/avdmanager" create avd -n SodaCheck -k 'system-images;android-30;google_apis;x86_64' --force
+      - name: Install published APK and open turntable and shelf
+        run: |
+          set -euo pipefail
+          sudo chmod a+rw /dev/kvm
+          "$ANDROID_HOME/emulator/emulator" -avd SodaCheck -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > "$RUNNER_TEMP/emulator.log" 2>&1 &
+          trap 'adb emu kill || true' EXIT
+          timeout 300 adb wait-for-device
+          timeout 240 bash -c 'until [ "$(adb shell getprop sys.boot_completed | tr -d "\r")" = "1" ]; do sleep 2; done'
+          curl -fsSL https://github.com/Tonight0717/soda-groove-android/releases/download/v1.0/SodaGroove.apk -o "$RUNNER_TEMP/SodaGroove.apk"
+          adb install "$RUNNER_TEMP/SodaGroove.apk"
+          adb shell wm size 780x1688
+          adb shell wm density 320
+          adb shell input keyevent 82
+          adb shell am start -W -n kr.sodagroove.player/.DeckActivity
+          adb shell uiautomator dump /sdcard/deck.xml
+          adb pull /sdcard/deck.xml "$RUNNER_TEMP/deck.xml"
+          python3 - <<'PY'
+          import os, re, subprocess, xml.etree.ElementTree as ET
+          tree = ET.parse(os.environ['RUNNER_TEMP']+'/deck.xml')
+          shelf = next(n for n in tree.iter('node') if n.get('text') == '진열장')
+          x,y,r,b = map(int,re.findall(r'\d+',shelf.get('bounds')))
+          with open('turntable.png','wb') as image:
+              subprocess.run(['adb','exec-out','screencap','-p'],stdout=image,check=True)
+          subprocess.run(['adb','shell','input','tap',str((x+r)//2),str((y+b)//2)],check=True)
+          PY
+          adb shell uiautomator dump /sdcard/shelf.xml
+          adb shell cat /sdcard/shelf.xml | grep -q '내 진열장'
+          adb exec-out screencap -p > shelf.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: device-screens
+          path: '*.png'
+          retention-days: 7
