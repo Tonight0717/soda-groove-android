@@ -53,18 +53,14 @@ adb("shell", "input", "text", "https://music.youtube.com/watch?v=M7lc1UVf-VE")
 print("Link entered:", find(kind="android.widget.EditText").get("text"), flush=True)
 adb("shell","input","keyevent","KEYCODE_BACK")
 tap(find("열기", "android.widget.Button"))
-# Streaming WebViews continually update accessibility content. A hierarchy dump
-# waits for the entire screen to become idle, which a live player cannot guarantee.
-for _ in range(20):
-    if b"android.webkit.WebView{" in adb("shell", "dumpsys", "activity", "top"):
-        break
-    time.sleep(1)
-else:
-    raise AssertionError("Native WebView did not mount after link entry")
+# A link now fills the card with the service name, cover and title. No WebView is used.
+find("YouTube Music")
+find("LP판을 탭해 회전 감상하거나 원본 앱에서 바로 들으세요.")
+assert b"android.webkit.WebView{" not in adb("shell", "dumpsys", "activity", "top"), "Unexpected WebView mounted"
 shot("linked-track")
 tap(save_button)
 time.sleep(1)
 tap(shelf_button)
 find("삭제")
 assert b"kr.sodagroove.player/.DeckWidget" in adb("shell", "dumpsys", "appwidget") or b"kr.sodagroove.player.DeckWidget" in adb("shell", "dumpsys", "appwidget")
-print("Installed release APK, launched deck, navigated shelf, opened music link, verified WebView, saved item and found widget provider.")
+print("Installed release APK, launched deck, navigated shelf, opened music link, confirmed no WebView, saved item and found widget provider.")

@@ -7,137 +7,160 @@ import android.view.MotionEvent;
 import android.view.View;
 
 final class Platter extends View {
-  interface Seek {
-    void to(float fraction);
+  interface Tap {
+    void tapped(boolean spinning);
   }
 
-  final Paint ink = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-  final Path clip = new Path();
-  final Rect crop = new Rect();
-  final RectF labelBounds = new RectF();
-  final Typeface labelFont = Typeface.create("sans-serif-condensed", Typeface.BOLD);
-  SweepGradient vinyl;
-  Bitmap cover;
-  Seek seek;
-  boolean playing, dragging, canSeek;
-  float fraction, preview, rotation, engagement, tipX, tipY, cx, cy, r;
-  long tick;
+  private static final int LABEL = 0xffd7f0e5, LABEL_INK = 0xff1f4f52, ARM = 0xff4d7883;
+  private static final int CARTRIDGE = 0xffd5ed8b;
+
+  private final Paint ink = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+  private final Paint photo = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+  private final Paint pen = new Paint(Paint.ANTI_ALIAS_FLAG);
+  private final Path discClip = new Path();
+  private final Path arm = new Path();
+  private final Rect crop = new Rect();
+  private final RectF labelBounds = new RectF();
+  Bitmap cover, vinyl;
+  Tap tap;
+  boolean spinning;
+  float rotation, drop, cx, cy, r;
+  private long tick;
 
   Platter(Context context) {
     super(context);
-    setContentDescription("LP 턴테이블 · 바늘을 끌어 구간 이동");
-  }
-
-  void circle(Canvas c, float x, float y, float radius, int color) {
-    ink.setColor(color);
-    c.drawCircle(x, y, radius, ink);
+    setClickable(true);
+    setContentDescription("LP 턴테이블 · 탭하면 판이 돌아갑니다");
+    pen.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+    pen.setTextAlign(Paint.Align.CENTER);
+    tick = SystemClock.uptimeMillis();
   }
 
   @Override
   protected void onSizeChanged(int w, int h, int oldW, int oldH) {
-    r = Math.min(w * .34f, h * .435f);
-    cx = w * .46f;
-    cy = h * .51f;
-    vinyl =
-        new SweepGradient(
-            cx, cy, new int[] {0xff397d90, 0xff87c4ce, 0xff45899b, 0xffa3d9d9, 0xff397d90}, null);
+    r = Math.max(1, Math.min(w * .30f, h * .40f));
+    cx = w * .458f;
+    cy = h * .47f;
     labelBounds.set(cx - r * .37f, cy - r * .37f, cx + r * .37f, cy + r * .37f);
-    clip.reset();
-    clip.addCircle(cx, cy, r * .37f, Path.Direction.CW);
+    discClip.reset();
+    discClip.addCircle(cx, cy, r * .37f, Path.Direction.CW);
+    vinyl = disc(r);
+  }
+
+  private static Bitmap disc(float radius) {
+    int size = Math.max(2, Math.round(radius * 2));
+    Bitmap art = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+    Canvas c = new Canvas(art);
+    float mid = size / 2f;
+    Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+    p.setColor(0xcc5e9fae);
+    c.drawCircle(mid, mid, mid, p);
+    p.setShader(
+        new SweepGradient(
+            mid,
+            mid,
+            new int[] {0x1effffff, 0x06ffffff, 0x1600262e, 0x06ffffff, 0x1effffff},
+            null));
+    c.drawCircle(mid, mid, mid, p);
+    p.setShader(null);
+    p.setStyle(Paint.Style.STROKE);
+    for (int i = 0; i < 46; i++) {
+      p.setStrokeWidth(Math.max(1f, mid * .0055f));
+      p.setColor(i % 6 == 0 ? 0x30e2f8fb : 0x26052a33);
+      c.drawCircle(mid, mid, mid * (.395f + i * .0132f), p);
+    }
+    p.setStrokeWidth(Math.max(1f, mid * .022f));
+    p.setColor(0x33052a33);
+    c.drawCircle(mid, mid, mid * .988f, p);
+    return art;
   }
 
   @Override
   protected void onDraw(Canvas c) {
     long now = SystemClock.uptimeMillis();
-    float dt = Math.min(60, now - tick);
+    float dt = Math.min(48f, now - tick);
     tick = now;
-    if (playing) rotation = (rotation + dt * 0.09f) % 360;
-    engagement = playing ? Math.min(1, engagement + dt / 330) : Math.max(0, engagement - dt / 330);
-    circle(c, cx + 2, cy + r * .055f, r * 1.025f, 0x33436772);
-    circle(c, cx, cy, r * 1.02f, 0xffeafcff);
-    c.save();
-    c.rotate(rotation, cx, cy);
-    ink.setShader(vinyl);
-    ink.setColor(-1);
-    c.drawCircle(cx, cy, r, ink);
-    ink.setShader(null);
-    c.restore();
-    ink.setStyle(Paint.Style.STROKE);
-    ink.setStrokeWidth(Math.max(1, r * .006f));
-    for (int i = 0; i < 30; i++)
-      circle(c, cx, cy, r * (.42f + i * .019f), i % 4 == 0 ? 0x65c3f7ef : 0x3c073844);
+    if (spinning) rotation = (rotation + dt * .045f) % 360f;
+    drop = Math.max(0, Math.min(1, drop + (spinning ? dt : -dt) / 380f));
+
     ink.setStyle(Paint.Style.FILL);
+    ink.setColor(0x1f2c6470);
+    c.drawCircle(cx, cy + r * .055f, r * 1.005f, ink);
+
     c.save();
     c.rotate(rotation, cx, cy);
-    circle(c, cx, cy, r * .39f, 0xffd4f0e5);
+    if (vinyl != null) c.drawBitmap(vinyl, cx - r, cy - r, photo);
+    label(c);
+    c.restore();
+
+    tonearm(c);
+    if (spinning || drop > 0) postInvalidateOnAnimation();
+  }
+
+  private void label(Canvas c) {
+    ink.setStyle(Paint.Style.FILL);
+    ink.setColor(LABEL);
+    c.drawCircle(cx, cy, r * .37f, ink);
     if (cover != null) {
       c.save();
-      c.clipPath(clip);
-      int size = Math.min(cover.getWidth(), cover.getHeight()),
-          x = (cover.getWidth() - size) / 2,
-          y = (cover.getHeight() - size) / 2;
-      ink.setColor(-1);
-      crop.set(x, y, x + size, y + size);
-      c.drawBitmap(cover, crop, labelBounds, ink);
+      c.clipPath(discClip);
+      int side = Math.min(cover.getWidth(), cover.getHeight()),
+          x = (cover.getWidth() - side) / 2,
+          y = (cover.getHeight() - side) / 2;
+      crop.set(x, y, x + side, y + side);
+      c.drawBitmap(cover, crop, labelBounds, photo);
       c.restore();
     } else {
-      ink.setColor(0xff006678);
-      ink.setTypeface(labelFont);
-      ink.setTextSize(r * .135f);
-      ink.setTextAlign(Paint.Align.CENTER);
-      c.drawText("SODA", cx, cy - r * .1f, ink);
-      c.drawText("GROOVE", cx, cy + r * .21f, ink);
+      pen.setColor(LABEL_INK);
+      pen.setTextSize(r * .115f);
+      c.drawText("SODA", cx, cy - r * .055f, pen);
+      pen.setTextSize(r * .085f);
+      c.drawText("•", cx, cy + r * .06f, pen);
+      pen.setTextSize(r * .115f);
+      c.drawText("GROOVE", cx, cy + r * .19f, pen);
     }
-    circle(c, cx, cy, r * .045f, 0xff174457);
-    circle(c, cx, cy, r * .019f, 0xffdefff6);
-    c.restore();
-    float px = cx + 1.12f * r, py = cy - .81f * r;
-    float f = dragging ? preview : fraction;
-    float lift = dragging ? 1 : engagement;
-    double angle = Math.toRadians(88 + (23 + 22 * f) * lift);
-    tipX = px + (float) Math.cos(angle) * r * 1.24f;
-    tipY = py + (float) Math.sin(angle) * r * 1.24f;
-    float elbowX = tipX + .12f * r, elbowY = tipY - .16f * r;
+    ink.setColor(0xff2b5a60);
+    c.drawCircle(cx, cy, r * .018f, ink);
+  }
+
+  private void tonearm(Canvas c) {
+    float px = cx + 1.11f * r, py = cy - .81f * r;
+    double a = Math.toRadians(93 + 13 * drop), length = 1.26f * r;
+    float ex = px + (float) (Math.cos(a) * length * .86f);
+    float ey = py + (float) (Math.sin(a) * length * .86f);
+    double b = a + Math.toRadians(12);
+    float tx = ex + (float) (Math.cos(b) * length * .16f);
+    float ty = ey + (float) (Math.sin(b) * length * .16f);
+    arm.reset();
+    arm.moveTo(px, py);
+    arm.lineTo(ex, ey);
+    arm.lineTo(tx, ty);
+    ink.setStyle(Paint.Style.STROKE);
     ink.setStrokeCap(Paint.Cap.ROUND);
-    ink.setStrokeWidth(r * .065f);
-    ink.setColor(0xff396371);
-    c.drawLine(px, py, elbowX, elbowY, ink);
-    c.drawLine(elbowX, elbowY, tipX, tipY, ink);
-    ink.setStrokeWidth(r * .027f);
-    ink.setColor(0xffe9ffff);
-    c.drawLine(px, py, elbowX, elbowY, ink);
-    circle(c, px, py, r * .12f, 0xff437986);
-    circle(c, px, py, r * .071f, 0xffc5e7ea);
-    circle(c, tipX, tipY, r * .063f, 0xffd1ea92);
-    if (playing || engagement > 0) postInvalidateOnAnimation();
+    ink.setStrokeJoin(Paint.Join.ROUND);
+    ink.setStrokeWidth(r * .085f);
+    ink.setColor(ARM);
+    c.drawPath(arm, ink);
+    ink.setStrokeWidth(r * .03f);
+    ink.setColor(0x55e9fbfd);
+    c.drawPath(arm, ink);
+    ink.setStyle(Paint.Style.FILL);
+    ink.setColor(ARM);
+    c.drawCircle(px, py, r * .15f, ink);
+    ink.setColor(0xffeaf8fa);
+    c.drawCircle(px, py, r * .088f, ink);
+    ink.setColor(CARTRIDGE);
+    c.drawCircle(tx, ty, r * .095f, ink);
   }
 
   @Override
   public boolean onTouchEvent(MotionEvent e) {
     switch (e.getActionMasked()) {
-      case MotionEvent.ACTION_DOWN:
-        if (!canSeek
-            || Math.hypot(e.getX() - tipX, e.getY() - tipY)
-                > Math.max(32 * getResources().getDisplayMetrics().density, r * .22)) return false;
-        preview = fraction;
-        dragging = true;
-        getParent().requestDisallowInterceptTouchEvent(true);
-        invalidate();
-        return true;
-      case MotionEvent.ACTION_MOVE:
-        if (!dragging) return false;
-        double a =
-            Math.toDegrees(Math.atan2(e.getY() - (cy - .81f * r), e.getX() - (cx + 1.12f * r)));
-        preview = (float) Math.max(0, Math.min(1, (a - 111) / 22));
-        invalidate();
-        return true;
       case MotionEvent.ACTION_UP:
-        if (dragging && seek != null) seek.to(preview);
         performClick();
+        return true;
+      case MotionEvent.ACTION_DOWN:
       case MotionEvent.ACTION_CANCEL:
-        dragging = false;
-        getParent().requestDisallowInterceptTouchEvent(false);
-        invalidate();
         return true;
       default:
         return false;
@@ -147,6 +170,10 @@ final class Platter extends View {
   @Override
   public boolean performClick() {
     super.performClick();
+    spinning = !spinning;
+    tick = SystemClock.uptimeMillis();
+    invalidate();
+    if (tap != null) tap.tapped(spinning);
     return true;
   }
 }

@@ -14,6 +14,8 @@ final class Covers {
   }
 
   static final ExecutorService pool = Executors.newFixedThreadPool(3);
+  /** Unit tests switch this off so the suite never touches the network. */
+  static boolean offline;
   static final Handler main = new Handler(Looper.getMainLooper());
   static final LruCache<String, Bitmap> memory =
       new LruCache<String, Bitmap>(6 * 1024 * 1024) {
@@ -29,6 +31,7 @@ final class Covers {
       result.loaded(cached);
       return;
     }
+    if (offline) return;
     File dir = new File(context.getCacheDir(), "covers");
     dir.mkdirs();
     pool.execute(
