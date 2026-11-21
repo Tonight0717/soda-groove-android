@@ -1,0 +1,34 @@
+plugins { id 'com.android.application' version '8.7.3' }
+android {
+    namespace 'kr.sodagroove.player'
+    compileSdk 35
+    buildToolsVersion '35.0.0'
+    defaultConfig {
+        applicationId 'kr.sodagroove.player'
+        minSdk 24
+        targetSdk 34
+        versionCode = (System.getenv('BUILD_NUMBER') ?: '1').toInteger()
+        versionName '1.0'
+        testInstrumentationRunner 'android.test.InstrumentationTestRunner'
+    }
+    testOptions {
+        unitTests.includeAndroidResources = true
+        unitTests.all { systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2' }
+    }
+    signingConfigs {
+        personal {
+            if (System.getenv('SIGN_FILE')) {
+                storeFile file(System.getenv('SIGN_FILE'))
+                storePassword System.getenv('SIGN_PASSWORD')
+                keyAlias 'sodagroove'
+                keyPassword System.getenv('SIGN_PASSWORD')
+            }
+        }
+    }
+    buildTypes { release { if (System.getenv('SIGN_FILE')) signingConfig signingConfigs.personal } }
+}
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.14.1'
+}

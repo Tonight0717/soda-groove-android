@@ -1,0 +1,9 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<uses-permission android:name="android.permission.INTERNET"/>
+<application android:allowBackup="false" android:label="소다그루브" android:icon="@drawable/record_icon" android:theme="@android:style/Theme.Material.Light.NoActionBar" android:usesCleartextTraffic="false">
+<activity android:name=".DeckActivity" android:exported="true" android:windowSoftInputMode="adjustNothing" android:launchMode="singleTop">
+<intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
+<receiver android:name=".DeckWidget" android:label="소다그루브 턴테이블" android:exported="false">
+<intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE"/></intent-filter>
+<meta-data android:name="android.appwidget.provider" android:resource="@xml/deck_widget"/></receiver>
+</application></manifest>
