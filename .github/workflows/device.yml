@@ -15,21 +15,7 @@ jobs:
           "$sdk/sdkmanager" 'system-images;android-30;google_apis;x86_64' 'emulator' 'platform-tools'
           echo no | "$sdk/avdmanager" create avd -n SodaCheck -k 'system-images;android-30;google_apis;x86_64' --force
       - name: Install published APK and open turntable and shelf
-        run: |
-          set -euo pipefail
-          export PATH="$ANDROID_HOME/platform-tools:$PATH"
-          sudo chmod a+rw /dev/kvm
-          "$ANDROID_HOME/emulator/emulator" -avd SodaCheck -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect > "$RUNNER_TEMP/emulator.log" 2>&1 &
-          trap 'adb emu kill || true' EXIT
-          timeout 300 adb wait-for-device
-          timeout 240 bash -c 'until [ "$(adb shell getprop sys.boot_completed | tr -d "\r")" = "1" ]; do sleep 2; done'
-          curl -fsSL https://github.com/Tonight0717/soda-groove-android/releases/download/v1.0/SodaGroove.apk -o "$RUNNER_TEMP/SodaGroove.apk"
-          adb install "$RUNNER_TEMP/SodaGroove.apk"
-          adb shell wm size 780x1688
-          adb shell wm density 320
-          adb shell input keyevent 82
-          adb shell am start -W -n kr.sodagroove.player/.DeckActivity
-          python3 tools/device-check.py
+        run: bash tools/boot-check.sh
       - uses: actions/upload-artifact@v4
         with:
           name: device-screens
