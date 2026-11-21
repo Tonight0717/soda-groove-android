@@ -25,6 +25,8 @@ def find(label=None, kind=None):
                 continue
             return node
         time.sleep(0.5)
+    print([(n.get("class"),n.get("text"),n.get("content-desc")) for n in screen().iter("node")], flush=True)
+    print(adb("logcat","-d","-b","crash").decode(errors="replace"),flush=True)
     raise AssertionError(f"Missing control: {label or kind}")
 
 
@@ -46,6 +48,8 @@ tap(find("턴테이블"))
 tap(find("링크 열기"))
 tap(find(kind="android.widget.EditText"))
 adb("shell", "input", "text", "https://music.youtube.com/watch?v=M7lc1UVf-VE")
+print("Link entered:", find(kind="android.widget.EditText").get("text"), flush=True)
+adb("shell","input","keyevent","KEYCODE_BACK")
 tap(find("열기", "android.widget.Button"))
 find("YouTube Music 열기")
 find(kind="android.webkit.WebView")
