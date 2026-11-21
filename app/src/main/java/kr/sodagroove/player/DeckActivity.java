@@ -272,7 +272,7 @@ public class DeckActivity extends Activity {
   private void loadPlayer() {
     service.setText(source.service());
     title.setText(source.list.isEmpty() ? "곡 불러오는 중" : "재생목록");
-    original.setText(source.service() + " 열기");
+    original.setText(source.music ? "뮤직에서 열기" : "유튜브에서 열기");
     message("공식 플레이어의 ▶ 버튼으로 재생하세요.");
     songId = "";
     songTitle = "";
