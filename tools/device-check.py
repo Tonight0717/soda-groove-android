@@ -41,6 +41,8 @@ def shot(name):
 
 find("첫 레코드를 올려 보세요")
 shot("turntable")
+save_button = find("진열장에 저장")
+shelf_button = find("진열장")
 tap(find("진열장"))
 find("내 진열장")
 shot("shelf")
@@ -51,10 +53,18 @@ adb("shell", "input", "text", "https://music.youtube.com/watch?v=M7lc1UVf-VE")
 print("Link entered:", find(kind="android.widget.EditText").get("text"), flush=True)
 adb("shell","input","keyevent","KEYCODE_BACK")
 tap(find("열기", "android.widget.Button"))
-find("YouTube Music 열기")
-find(kind="android.webkit.WebView")
-tap(find("진열장에 저장"))
-tap(find("진열장"))
+# Streaming WebViews continually update accessibility content. A hierarchy dump
+# waits for the entire screen to become idle, which a live player cannot guarantee.
+for _ in range(20):
+    if b"android.webkit.WebView{" in adb("shell", "dumpsys", "activity", "top"):
+        break
+    time.sleep(1)
+else:
+    raise AssertionError("Native WebView did not mount after link entry")
+shot("linked-track")
+tap(save_button)
+time.sleep(1)
+tap(shelf_button)
 find("삭제")
 assert b"kr.sodagroove.player/.DeckWidget" in adb("shell", "dumpsys", "appwidget") or b"kr.sodagroove.player.DeckWidget" in adb("shell", "dumpsys", "appwidget")
 print("Installed release APK, launched deck, navigated shelf, opened music link, verified WebView, saved item and found widget provider.")
